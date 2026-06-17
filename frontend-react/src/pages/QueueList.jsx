@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X, Search, ArrowRight } from 'lucide-react';
+// 1. Import Controller/Hook yang sudah kita buat
+import { useQueueController } from '../hooks/useQueueController';
 
 export default function QueueList() {
   const navigate = useNavigate();
-  const [queues, setQueues] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
 
-  // Form State
+  // 2. Panggil fungsi dan state dari Controller (Logika dipisah ke sini)
+  const { queues, loading, formLoading, fetchQueues, addQueue } = useQueueController();
+
+  // Form State tetap di UI karena mengontrol input langsung
   const [formData, setFormData] = useState({
     nama_pelanggan: '',
     no_whatsapp: '',
@@ -22,20 +24,7 @@ export default function QueueList() {
     tanggal_selesai: ''
   });
 
-  const fetchQueues = () => {
-    setLoading(true);
-    fetch('http://localhost:8000/api/antrean')
-      .then(res => res.json())
-      .then(data => {
-        setQueues(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  };
-
+  // 3. Jalankan fetch data dari Controller saat halaman dibuka
   useEffect(() => {
     fetchQueues();
   }, []);
@@ -45,40 +34,30 @@ export default function QueueList() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  // 4. Handle Submit yang sekarang memanfaatkan fungsi dari Controller
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormLoading(true);
+    
+    const result = await addQueue(formData);
 
-    fetch('http://localhost:8000/api/antrean', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-      .then(res => res.json())
-      .then(data => {
-        setFormLoading(false);
-        setIsModalOpen(false);
-        fetchQueues(); // Refresh data
-        // Reset form
-        setFormData({
-          nama_pelanggan: '',
-          no_whatsapp: '',
-          jenis_sepatu: '',
-          jenis_layanan: 'deep_clean',
-          total_harga: '',
-          status_cucian: 'antri',
-          status_pembayaran: 'belum_bayar',
-          tanggal_terima: new Date().toISOString().split('T')[0],
-          tanggal_selesai: ''
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        setFormLoading(false);
-        alert('Gagal menambahkan antrean.');
+    if (result.success) {
+      setIsModalOpen(false);
+      fetchQueues(); // Refresh data antrean via Controller
+      // Reset form ke awal
+      setFormData({
+        nama_pelanggan: '',
+        no_whatsapp: '',
+        jenis_sepatu: '',
+        jenis_layanan: 'deep_clean',
+        total_harga: '',
+        status_cucian: 'antri',
+        status_pembayaran: 'belum_bayar',
+        tanggal_terima: new Date().toISOString().split('T')[0],
+        tanggal_selesai: ''
       });
+    } else {
+      alert('Gagal menambahkan antrean.');
+    }
   };
 
   return (
