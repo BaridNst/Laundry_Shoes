@@ -3,46 +3,46 @@
 namespace App\Repositories;
 
 use App\Contracts\OrderContract;
-use App\Models\Order; // Sesuaikan dengan nama Model Laravel kamu
+use App\Models\Antrean;
 
 class OrderRepository implements OrderContract
 {
-    // Mengambil antrean terbaru untuk ditampilkan di tabel dashboard
-    public function getLatestOrders(int $limit = 10)
+    public function getAllOrders()
     {
-        return Order::orderBy('created_at', 'desc')->take($limit)->get();
+        return Antrean::orderBy('id', 'desc')->get();
     }
 
-    // Membuat antrean laundry baru saat klik "+ Tambah Pelanggan Baru"
+    public function getOrderById($id)
+    {
+        $antrean = Antrean::find($id);
+        if (!$antrean) {
+            $antrean = Antrean::where('kode_antrean', $id)->first();
+        }
+        return $antrean;
+    }
+
     public function createOrder(array $data)
     {
-        return Order::create([
-            'kode_antrean' => $data['kode_antrean'], // misal: ANT005
-            'pelanggan'    => $data['pelanggan'],
-            'layanan'      => $data['layanan'],
-            'tgl_selesai'  => $data['tgl_selesai'],
-            'status_cucian'=> 'ANTRI', // Default awal masuk
-            'pembayaran'   => 'BELUM BAYAR', // Default awal masuk
-        ]);
+        // Generate Kode Antrean
+        $latest = Antrean::orderBy('id', 'desc')->first();
+        if ($latest) {
+            $lastNumber = intval(substr($latest->kode_antrean, 3));
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            $data['kode_antrean'] = 'ANT' . $newNumber;
+        } else {
+            $data['kode_antrean'] = 'ANT001';
+        }
+
+        return Antrean::create($data);
     }
 
-    // Mengubah status cucian (ANTRI -> DICUCI -> DIAMBIL)
-    public function updateCucianStatus(int $orderId, string $status)
+    public function updateOrder($id, array $data)
     {
-        $order = Order::findOrFail($orderId);
-        $order->status_cucian = $status;
-        $order->save();
-
-        return $order;
-    }
-
-    // Mengubah status pembayaran (BELUM BAYAR -> LUNAS)
-    public function updatePaymentStatus(int $orderId, string $status)
-    {
-        $order = Order::findOrFail($orderId);
-        $order->pembayaran = $status;
-        $order->save();
-
-        return $order;
+        $antrean = $this->getOrderById($id);
+        if ($antrean) {
+            $antrean->update($data);
+            return $antrean;
+        }
+        return null;
     }
 }

@@ -13,8 +13,8 @@ Repositori: https://github.com/BaridNst/Kelompok-9
 Anggota & Role
 
 Anggota 1
-- Nama Lengkap: Ajmalussirah
-- NIM: 230705048
+- Nama Lengkap: Muhammad Abiyyi Thufail
+- NIM: 230705146
 - Role: Frontend
 - Teknologi: React.js, Tailwind CSS, Axios, Context API
 
@@ -25,8 +25,8 @@ Anggota 2
 - Teknologi: Laravel 11, Guzzle HTTP Client, Laravel Sanctum, MySQL Driver
 
 Anggota 3
-- Nama Lengkap: Muhammad Abiyyi Thufail
-- NIM: 230705146
+- Nama Lengkap: Ajmalussirah
+- NIM: 230705048
 - Role: DevOps
 - Teknologi: MySQL, Docker, GitHub Actions, Nginx, Render.com
 

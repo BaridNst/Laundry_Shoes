@@ -1,0 +1,342 @@
+=============================================================================
+         PANDUAN SUPER LENGKAP & RINCI DEPLOYMENT PROJECT (100% GRATIS)
+                Untuk Pemula: React (Frontend) & Laravel (Backend)
+=============================================================================
+
+Panduan ini ditulis khusus agar Anda yang baru pertama kali melakukan deploy 
+bisa memahami setiap langkah secara bertahap tanpa bingung. Silakan baca dan 
+ikuti petunjuk ini klik-demi-klik, ketik-demi-ketik.
+
+-----------------------------------------------------------------------------
+KONSEP DASAR DEPLOYMENT (PENTING UNTUK DIPAHAMI)
+-----------------------------------------------------------------------------
+Saat ini aplikasi Anda berjalan di komputer lokal (Localhost). Agar aplikasi 
+bisa diakses oleh orang lain di internet secara gratis, kita harus memindahkan:
+1. DATABASE MySQL: Disimpan di penyedia database online (Clever Cloud).
+2. BACKEND (Laravel): Dijalankan di server cloud (Render.com).
+3. FRONTEND (React): Di-host di server statis yang cepat (Vercel).
+
+Mari kita mulai dari langkah paling pertama!
+
+=============================================================================
+LANGKAH 1: MEMBUAT & MEMPERSIAPKAN REPOSITORI GITHUB
+=============================================================================
+GitHub adalah tempat penyimpanan kode project Anda di internet. Render dan Vercel 
+akan membaca kode Anda langsung dari GitHub ini.
+
+Bagian A: Membuat Repositori di Website GitHub
+1. Buka browser dan pergi ke https://github.com/
+2. Jika belum punya akun, silakan daftar. Jika sudah, silakan login.
+3. Di halaman utama GitHub, cari tombol hijau bertuliskan "New" atau tanda "+" 
+   di kanan atas, lalu klik "New repository".
+4. Isi form pembuatan repositori:
+   - Repository name: bebas, contohnya: `laundry-shoes-project`
+   - Public/Private: Pilih "Public" (atau "Private" juga tidak apa-apa, tapi 
+     Public lebih mudah dihubungkan nanti).
+   - JANGAN centang "Add a README file", "Add .gitignore", atau "Choose a license".
+     Biarkan semuanya kosong.
+5. Klik tombol hijau "Create repository".
+6. Anda akan diarahkan ke halaman yang berisi beberapa perintah teks. Biarkan 
+   halaman itu tetap terbuka di browser Anda.
+
+Bagian B: Menghubungkan Folder Lokal di Komputer ke GitHub
+1. Buka folder project Anda di komputer (`d:\Project Baru`).
+2. Klik kanan di area kosong di dalam folder tersebut, pilih "Open Git Bash here" 
+   (jika Anda menggunakan Git Bash) atau buka Terminal / Command Prompt biasa 
+   lalu arahkan ke direktori tersebut.
+3. Jalankan perintah berikut satu per satu di terminal Anda:
+   
+   git init
+   (Perintah ini untuk menginisialisasi folder Anda sebagai repository Git lokal)
+
+   git add .
+   (Perintah ini untuk menandai seluruh file di dalam folder agar siap diunggah)
+
+   git commit -m "Initial commit for deployment"
+   (Perintah ini untuk menyimpan status file-file Anda saat ini)
+
+   git branch -M main
+   (Perintah ini untuk memastikan nama branch utama Anda adalah "main")
+
+   git remote add origin Halaman_URL_Github_Anda
+   (Ganti "Halaman_URL_Github_Anda" dengan link yang ada di halaman GitHub tadi.
+    Contoh formatnya: https://github.com/UsernameAnda/laundry-shoes-project.git)
+
+   git push -u origin main
+   (Perintah ini untuk mengunggah seluruh kode dari komputer Anda ke GitHub.
+    Jika diminta login ke GitHub di layar komputer Anda, ikuti saja prosesnya).
+
+4. Refresh halaman repositori GitHub Anda di browser. Sekarang Anda harusnya 
+   sudah melihat folder "Laravel backend" dan "frontend-react" di sana.
+
+=============================================================================
+LANGKAH 2: DEPLOY DATABASE MySQL ONLINE GRATIS (CLEVER CLOUD)
+=============================================================================
+Aplikasi Anda membutuhkan database online agar data transaksi/antrean tidak hilang. 
+Kita akan menggunakan Clever Cloud karena gratis dan tidak meminta kartu kredit.
+
+1. Buka browser dan pergi ke https://www.clever-cloud.com/
+2. Klik "Sign Up" untuk mendaftar akun baru. Gunakan email aktif Anda.
+3. Setelah selesai mendaftar dan memverifikasi email, login ke dashboard.
+4. Di bagian kiri atas dashboard Clever Cloud, klik tombol "+ Create" lalu 
+   pilih "an add-on".
+5. Anda akan melihat daftar add-on. Cari dan pilih "MySQL Free Organizer".
+6. Pada opsi pemilihan lokasi (Select a region), pilih "Paris" (ini adalah server 
+   gratis yang tersedia). Lalu klik "Next".
+7. Anda akan diminta memberi nama database Anda (bebas, misalnya `db_laundry`).
+8. Klik "Next" atau "Create" untuk menyelesaikan.
+9. Setelah database berhasil dibuat, klik pada nama database tersebut di dashboard.
+10. Masuk ke menu "Info" (ikon kunci inggris/informasi). Di sana Anda akan melihat 
+    informasi penting berikut. CATAT ATAU JANGAN TUTUP HALAMAN INI:
+    - Host (Biasanya berakhiran .clevercloud.com)
+    - Database name (Formatnya mirip: bxxxxxxxxx)
+    - User (Formatnya mirip: uxxxxxxxxx)
+    - Password (Kode rahasia panjang)
+    - Port (Biasanya 3306)
+
+=============================================================================
+LANGKAH 3: MENYIAPKAN FILE DOCKER DI BACKEND LARAVEL
+=============================================================================
+Render.com membutuhkan instruksi khusus untuk menjalankan PHP/Laravel karena 
+mereka menggunakan sistem Docker. Kita harus membuat 3 file konfigurasi di dalam 
+folder backend Anda.
+
+Buka editor kode Anda (VS Code), masuk ke folder "Laravel backend", lalu buat 
+3 file baru dengan nama berikut:
+
+-----------------------------------------------------------------------------
+FILE 1: Buat file dengan nama "Dockerfile" (Tanpa ekstensi apapun!)
+Tempatkan di: d:\Project Baru\Laravel backend\Dockerfile
+Isi dengan kode di bawah ini:
+-----------------------------------------------------------------------------
+FROM php:8.2-fpm-alpine
+
+# Install system dependencies yang dibutuhkan PHP dan Nginx
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    curl \
+    libpng-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    git \
+    oniguruma-dev \
+    libzip-dev
+
+# Install PHP extensions untuk MySQL
+RUN docker-php-ext-install pdo pdo_mysql bcmath mbstring zip pcntl
+
+# Install Composer versi terbaru
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+
+# Tentukan folder kerja di dalam server
+WORKDIR /var/www
+
+# Copy seluruh isi folder backend ke dalam server
+COPY . /var/www
+
+# Install library PHP/Laravel
+RUN composer install --no-dev --optimize-autoloader
+
+# Atur hak akses folder storage agar server bisa menulis data (session, cache, log)
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Copy konfigurasi web server Nginx
+COPY nginx.conf /etc/nginx/http.d/default.conf
+
+# Buka port 80 untuk akses web
+EXPOSE 80
+
+# Jalankan optimasi Laravel dan hidupkan server PHP serta Nginx secara bersamaan
+CMD php artisan config:cache && php artisan route:cache && php artisan view:cache && php-fpm -D && nginx -g "daemon off;"
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+FILE 2: Buat file dengan nama "nginx.conf"
+Tempatkan di: d:\Project Baru\Laravel backend\nginx.conf
+Isi dengan kode di bawah ini:
+-----------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name localhost;
+    root /var/www/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+FILE 3: Buat file dengan nama ".dockerignore" (Ada titik di depan!)
+Tempatkan di: d:\Project Baru\Laravel backend\.dockerignore
+Isi dengan kode di bawah ini:
+-----------------------------------------------------------------------------
+/vendor
+.env
+.git
+.github
+/node_modules
+-----------------------------------------------------------------------------
+
+Setelah membuat ketiga file di atas, Anda harus mengirimkannya ke GitHub. 
+Jalankan perintah ini di Git Bash / Terminal folder project Anda:
+1. `git add .`
+2. `git commit -m "Add Docker files for backend deploy"`
+3. `git push origin main`
+
+=============================================================================
+LANGKAH 4: DEPLOY BACKEND LARAVEL DI RENDER.COM
+=============================================================================
+Sekarang kita akan membuat server Laravel Anda online di Render.
+
+1. Buka browser dan pergi ke https://render.com/
+2. Klik tombol "Sign in" di kanan atas. Pilih login menggunakan akun "GitHub" Anda.
+3. Setelah masuk ke dashboard Render, klik tombol "+ New" (warna ungu) di kanan 
+   atas, lalu pilih "Web Service".
+4. Di halaman berikutnya, Anda akan melihat daftar repository GitHub Anda. Cari 
+   repository project Anda (misalnya `laundry-shoes-project`) lalu klik "Connect".
+5. Sekarang, isi formulir konfigurasi berikut dengan teliti:
+   - Name: `laundry-shoes-api` (Gunakan huruf kecil tanpa spasi)
+   - Region: Pilih Singapore (agar aksesnya cepat dari Indonesia)
+   - Branch: `main`
+   - Root Directory: `Laravel backend`  <-- PENTING! Harus diisi karena project 
+     backend berada di dalam folder ini.
+   - Runtime: `Docker`                  <-- PENTING! Harus pilih Docker
+   - Instance Type: Pilih "Free"
+6. Scroll ke bawah, cari dan klik tombol "Advanced".
+7. Di bagian "Environment Variables", kita harus menambahkan semua variabel `.env` 
+   satu per satu dengan cara klik tombol "Add Environment Variable". Masukkan 
+   variabel berikut:
+   
+   - KEY: `APP_KEY`
+     VALUE: (Salin nilai APP_KEY dari file `.env` lokal Anda, contoh: `base64:xxxx...`)
+   
+   - KEY: `APP_ENV`
+     VALUE: `production`
+   
+   - KEY: `APP_DEBUG`
+     VALUE: `false`
+   
+   - KEY: `DB_CONNECTION`
+     VALUE: `mysql`
+   
+   - KEY: `DB_HOST`
+     VALUE: (Salin nilai "Host" dari Clever Cloud di Langkah 2)
+   
+   - KEY: `DB_PORT`
+     VALUE: `3306`
+   
+   - KEY: `DB_DATABASE`
+     VALUE: (Salin nilai "Database name" dari Clever Cloud di Langkah 2)
+   
+   - KEY: `DB_USERNAME`
+     VALUE: (Salin nilai "User" dari Clever Cloud di Langkah 2)
+   
+   - KEY: `DB_PASSWORD`
+     VALUE: (Salin nilai "Password" dari Clever Cloud di Langkah 2)
+
+8. Setelah semua variabel terisi dengan benar, scroll paling bawah dan klik 
+   tombol hijau "Create Web Service".
+9. Render akan memulai proses build (membaca Dockerfile, mendownload php, dll). 
+   Proses ini memakan waktu sekitar 5-10 menit. Anda bisa melihat log prosesnya 
+   berjalan di layar.
+10. Jika selesai, status di kiri atas akan berubah menjadi hijau ("Live").
+11. Salin URL Backend Anda yang tertera di bagian atas dashboard Render 
+    (Contoh URL: `https://laundry-shoes-api.onrender.com`).
+
+Melakukan Migrasi Database di Render:
+Agar tabel-tabel database terbuat di Clever Cloud, jalankan perintah migrasi ini:
+1. Di halaman dashboard Web Service Anda di Render, cari menu "Shell" di sebelah kiri.
+2. Tunggu terminal hitamnya muncul dan terhubung.
+3. Ketik perintah berikut lalu tekan Enter:
+   php artisan migrate --force
+4. Jika muncul tulisan "Migration table created successfully" dan daftar tabel 
+   yang berhasil dibuat, selamat! Database Anda sudah siap digunakan.
+
+=============================================================================
+LANGKAH 5: MENGHUBUNGKAN FRONTEND REACT KE BACKEND YANG SUDAH DEPLOY
+=============================================================================
+Di project lokal Anda, frontend React masih memanggil API lokal (`localhost:8000`). 
+Kita harus mengubahnya ke URL Render yang baru saja Anda dapatkan di Langkah 4.
+
+Buka editor VS Code Anda, cari file-file berikut di dalam folder `frontend-react`:
+
+1. File: `d:\Project Baru\frontend-react\src\pages\QueueList.jsx`
+   - Cari baris kode (sekitar baris 27 dan 52) yang bertuliskan:
+     `fetch('http://localhost:8000/api/antrean')`
+   - Ubah `http://localhost:8000` menjadi URL Render Anda. Contoh:
+     `fetch('https://laundry-shoes-api.onrender.com/api/antrean')`
+
+2. File: `d:\Project Baru\frontend-react\src\pages\QueueDetail.jsx`
+   - Cari baris kode (sekitar baris 37 dan 154) yang bertuliskan:
+     `fetch('http://localhost:8000/api/antrean/...')`
+   - Ubah menjadi:
+     `fetch('https://laundry-shoes-api.onrender.com/api/antrean/...')`
+
+3. File: `d:\Project Baru\frontend-react\src\pages\Dashboard.jsx`
+   - Cari baris kode (sekitar baris 20, 31, dan 37) yang memanggil `localhost:8000`.
+   - Ubah semuanya menggunakan URL Render Anda.
+
+Kirim perubahan kode frontend ini ke GitHub:
+Buka kembali Git Bash/Terminal Anda, jalankan perintah ini:
+1. `git add .`
+2. `git commit -m "Update API endpoints to production URL"`
+3. `git push origin main`
+
+=============================================================================
+LANGKAH 6: DEPLOY FRONTEND REACT DI VERCEL
+=============================================================================
+Vercel adalah tempat hosting gratis terbaik untuk web statis seperti React.
+
+1. Buka browser dan pergi ke https://vercel.com/
+2. Klik "Sign Up" lalu pilih "Continue with GitHub" (Daftar menggunakan akun GitHub).
+3. Setelah login, Anda akan masuk ke dashboard Vercel. Klik tombol hitam "Add New..." 
+   di kanan atas, lalu pilih "Project".
+4. Vercel akan menampilkan daftar repositori GitHub Anda. Cari repositori Anda 
+   (misalnya `laundry-shoes-project`) lalu klik tombol "Import".
+5. Di halaman konfigurasi project:
+   - Project Name: `laundry-shoes-app` (bebas)
+   - Framework Preset: Pilih `Vite` (Vercel biasanya otomatis memilih ini)
+   - Root Directory: Klik tombol "Edit" di sebelahnya, lalu pilih folder 
+     `frontend-react`, kemudian klik "Continue". (Langkah ini sangat penting!).
+6. Di bagian "Build and Development Settings" dan "Environment Variables", 
+   biarkan kosong (default).
+7. Klik tombol "Deploy".
+8. Tunggu sekitar 1-2 menit hingga proses build selesai. Anda akan melihat animasi 
+   kembang api jika berhasil!
+9. Klik gambar preview website Anda untuk membukanya. Anda sekarang akan mendapatkan 
+   URL resmi dari Vercel (misal: `https://laundry-shoes-app.vercel.app`).
+
+=============================================================================
+SELESAI! APLIKASI ANDA SUDAH ONLINE SEPENUHNYA!
+=============================================================================
+Sekarang Anda bisa mengakses website Anda dari handphone, laptop lain, maupun 
+membagikan link Vercel tersebut ke orang lain. Database Anda tersimpan aman di 
+Clever Cloud, Laravel berjalan di Render, dan React berjalan di Vercel.
+=============================================================================

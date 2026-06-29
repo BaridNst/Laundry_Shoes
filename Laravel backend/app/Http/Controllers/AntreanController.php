@@ -2,14 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Antrean;
 use Illuminate\Http\Request;
+use App\Services\OrderService;
 
 class AntreanController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function index()
     {
-        $antreans = Antrean::orderBy('id', 'desc')->get();
+        $antreans = $this->orderService->getAllOrders();
         return response()->json($antreans);
     }
 
@@ -27,17 +34,11 @@ class AntreanController extends Controller
             'tanggal_selesai' => 'required|date',
         ]);
 
-        // Generate Kode Antrean (e.g. ANT001)
-        $latest = Antrean::orderBy('id', 'desc')->first();
-        if ($latest) {
-            $lastNumber = intval(substr($latest->kode_antrean, 3));
-            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-            $validated['kode_antrean'] = 'ANT' . $newNumber;
-        } else {
-            $validated['kode_antrean'] = 'ANT001';
-        }
+        $antrean = $this->orderService->createOrder($validated);
 
-        $antrean = Antrean::create($validated);
+        // --- KODE WHATSAPP GATEWAY (Saat Antrean Baru Dibuat) ---
+        $pesanWA = "Halo {$antrean->nama_pelanggan}, pesanan cuci sepatu Anda dengan kode {$antrean->kode_antrean} telah kami terima dan masuk ke dalam antrean. Terima kasih!";
+        $this->sendWhatsAppNotification($antrean->no_whatsapp, $pesanWA);
 
         return response()->json([
             'status' => 'sukses',
@@ -48,10 +49,7 @@ class AntreanController extends Controller
 
     public function show($id)
     {
-        $antrean = Antrean::find($id);
-        if (!$antrean) {
-            $antrean = Antrean::where('kode_antrean', $id)->first();
-        }
+        $antrean = $this->orderService->getOrderById($id);
 
         if ($antrean) {
             return response()->json($antrean);
@@ -62,21 +60,22 @@ class AntreanController extends Controller
 
     public function update(Request $request, $id)
     {
-        $antrean = Antrean::find($id);
-        if (!$antrean) {
-            $antrean = Antrean::where('kode_antrean', $id)->first();
-        }
-
-        if (!$antrean) {
-            return response()->json(['status' => 'error', 'pesan' => 'Antrean tidak ditemukan'], 404);
-        }
-
         $validated = $request->validate([
             'status_cucian' => 'sometimes|in:antri,dicuci,selesai,diambil',
             'status_pembayaran' => 'sometimes|in:belum_bayar,lunas',
         ]);
 
-        $antrean->update($validated);
+        $antrean = $this->orderService->updateOrder($id, $validated);
+
+        if (!$antrean) {
+            return response()->json(['status' => 'error', 'pesan' => 'Antrean tidak ditemukan'], 404);
+        }
+
+        // --- KODE WHATSAPP GATEWAY (Saat Status Selesai) ---
+        if (isset($validated['status_cucian']) && $validated['status_cucian'] == 'selesai') {
+            $pesanWA = "Halo {$antrean->nama_pelanggan}, sepatu Anda sudah selesai dicuci dan siap untuk diambil ya!";
+            $this->sendWhatsAppNotification($antrean->no_whatsapp, $pesanWA);
+        }
 
         return response()->json([
             'status' => 'sukses',
@@ -85,17 +84,29 @@ class AntreanController extends Controller
         ]);
     }
 
-    public function laporanKeuangan()
+    /**
+     * ========================================================
+     * KODE THIRD-PARTY API WHATSAPP GATEWAY (MENGGUNAKAN GUZZLE)
+     * ========================================================
+     */
+    private function sendWhatsAppNotification($no_whatsapp, $pesan)
     {
-        // Simple aggregate
-        $totalPendapatan = Antrean::where('status_pembayaran', 'lunas')->sum('total_harga');
-        $totalAntrean = Antrean::where('status_cucian', '!=', 'diambil')->count();
-        $selesaiHariIni = Antrean::where('status_cucian', 'selesai')->count(); // simplified
+        // Contoh implementasi menggunakan Vendor Fonnte (Berbasis Guzzle HTTP)
+        // Token API biasanya disimpan di .env (misal: env('FONNTE_TOKEN'))
+        $apiToken = 'TOKEN_API_WHATSAPP_KAMU_DISINI'; 
 
-        return response()->json([
-            'total_pendapatan' => $totalPendapatan,
-            'total_antrean_aktif' => $totalAntrean,
-            'selesai_hari_ini' => $selesaiHariIni,
-        ]);
+        try {
+            // Kita menggunakan Laravel HTTP Facade (yang di belakangnya adalah Guzzle HTTP Client)
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'Authorization' => $apiToken,
+            ])->post('https://api.fonnte.com/send', [
+                'target' => $no_whatsapp,
+                'message' => $pesan,
+                'countryCode' => '62', // Kode negara Indonesia
+            ]);
+        } catch (\Exception $e) {
+            // Log error jika WhatsApp gagal terkirim (agar aplikasi tidak crash)
+            \Illuminate\Support\Facades\Log::error('WhatsApp Error: ' . $e->getMessage());
+        }
     }
 }
