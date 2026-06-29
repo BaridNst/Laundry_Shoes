@@ -30,4 +30,9 @@ class DashboardService
     {
         return $this->dashboardRepository->getLowStockCount();
     }
+
+    public function getLaporanKeuangan()
+    {
+        return $this->dashboardRepository->getLaporanKeuangan();
+    }
 }

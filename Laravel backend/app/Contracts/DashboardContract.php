@@ -12,4 +12,7 @@ interface DashboardContract
 
     // Menghitung berapa jenis bahan yang masuk 'Peringatan Stok'
     public function getLowStockCount();
+
+    // Laporan Keuangan
+    public function getLaporanKeuangan();
 }

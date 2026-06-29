@@ -16,9 +16,14 @@ class OrderService
         $this->orderRepository = $orderRepository;
     }
 
-    public function getLatestOrders(int $limit = 10)
+    public function getAllOrders()
     {
-        return $this->orderRepository->getLatestOrders($limit);
+        return $this->orderRepository->getAllOrders();
+    }
+
+    public function getOrderById($id)
+    {
+        return $this->orderRepository->getOrderById($id);
     }
 
     public function createOrder(array $data)
@@ -26,13 +31,8 @@ class OrderService
         return $this->orderRepository->createOrder($data);
     }
 
-    public function updateCucianStatus(int $orderId, string $status)
+    public function updateOrder($id, array $data)
     {
-        return $this->orderRepository->updateCucianStatus($orderId, $status);
-    }
-
-    public function updatePaymentStatus(int $orderId, string $status)
-    {
-        return $this->orderRepository->updatePaymentStatus($orderId, $status);
+        return $this->orderRepository->updateOrder($id, $data);
     }
 }
